@@ -6,6 +6,8 @@ Hele brugerfladen er på dansk, og alle datoer og "dagens låge" regnes i tidszo
 
 **Stak:** Vite · React · TypeScript · Tailwind · Recharts · Supabase (Postgres, Auth, RLS) · Netlify
 
+**Live:** https://kaffekalenderen.netlify.app · **Kode:** https://github.com/Claus856/Kaffekalenderen
+
 **Version 0.1.0.** Færdigt: scraper, login med e-mailkode og gruppekode, "I dag" med vurdering, kalender,
 statistik, admin, hjemmeskærm (PWA) og Netlify-opsætning. Se [CHANGELOG.md](CHANGELOG.md).
 
@@ -199,7 +201,7 @@ vurderinger du giver under test er rigtige data. Slet dem før 1. december (SQL 
 `netlify.toml` er sat op med build-kommando, publiceringsmappe, SPA-redirect (alle stier åbner `index.html`),
 cache-regler og sikkerhedsheaders.
 
-1. Læg projektet i et git-repository (`git init`, commit, push til GitHub). `.env` er i `.gitignore` og kommer ikke med.
+1. Læg projektet på GitHub (`git init`, commit, push). `.env` er i `.gitignore` og kommer ikke med.
 2. Netlify → **Add new site → Import an existing project** → vælg repositoryet. Build-indstillingerne læses fra
    `netlify.toml`.
 3. **Site configuration → Environment variables**: opret **kun** disse to:
@@ -209,6 +211,12 @@ cache-regler og sikkerhedsheaders.
    Opret **ikke** `SUPABASE_SERVICE_ROLE_KEY` i Netlify.
 4. Deploy. Sæt derefter Netlify-adressen som **Site URL** i Supabase (afsnit 2, punkt 6).
 5. Åbn adressen på telefonen, log ind og opret din profil med gruppekoden.
+
+**Dette projekt:** Netlify-sitet hedder `kaffekalenderen` (https://kaffekalenderen.netlify.app) og er koblet til
+GitHub-grenen `main`, så hvert push deployer automatisk. Kun de to `VITE_`-variabler ligger i Netlify.
+
+Gratis Netlify-projekter får en "Powered by Netlify"-badge nederst til højre, som dækker appens fanebjælke. Slå den
+fra under **Project configuration → General → Powered by Netlify badge**. Det virker straks uden redeploy.
 
 ## 9. Hjemmeskærm (PWA)
 
@@ -288,8 +296,8 @@ appen kan prøves i en browser på 375 px. `npm run e2e -- otp <Navn>` giver en 
   afvigelserne står i scraperens opsummering.
 - Service workeren er afprøvet i Node, men ikke i en rigtig browser (det indbyggede browserpanel kan ikke
   registrere service workers). Tjek efter deploy i Chrome: DevTools → Application → Service Workers.
-- Der er ikke sat en `Content-Security-Policy`-header, fordi den ikke kan afprøves før den ligger på Netlify.
-- Mappen er ikke et git-repository fra start. Kør `git init`, før du deployer via git.
+- Der er ikke sat en `Content-Security-Policy`-header. Siden ligger nu på Netlify og kan afprøves, så den kan tilføjes
+  (Recharts bruger inline-styles, så `style-src` skal tillade `'unsafe-inline'`).
 
 ## 14. Mappestruktur
 
