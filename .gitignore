@@ -1,0 +1,26 @@
+# Afhængigheder og build
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Hemmeligheder – service-role-nøglen må ALDRIG i git
+.env
+.env.*
+!.env.example
+
+# Supabase CLI: lokal link-tilstand
+supabase/.temp/
+
+# Scraperens lokale cache og output
+scripts/.cache/
+scripts/out/
+
+# Lokale Claude Code-indstillinger (launch.json er med, så preview-serveren kan startes)
+.claude/settings.local.json
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

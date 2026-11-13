@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kaffekalenderen">
+  <rect width="512" height="512" fill="#4a3122"/>
+  <path d="M200 156c-22-26 22-42 0-76M256 156c-22-26 22-42 0-76M312 156c-22-26 22-42 0-76" stroke="#e2cfb6" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <path d="M372 228h22c28 0 44 18 44 42s-18 44-46 44h-26" stroke="#f1e8dc" stroke-width="22" fill="none" stroke-linecap="round"/>
+  <path d="M140 208h232v70c0 66-52 118-116 118s-116-52-116-118z" fill="#f1e8dc"/>
+  <ellipse cx="256" cy="208" rx="116" ry="20" fill="#9c6b3f"/>
+  <ellipse cx="256" cy="414" rx="170" ry="26" fill="#cfae88"/>
+</svg>

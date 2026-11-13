@@ -1,0 +1,17 @@
+{
+  "name": "Kaffekalenderen",
+  "short_name": "Kaffekalender",
+  "description": "Vennegruppens karakterbog for BREW Companys kaffejulekalender",
+  "lang": "da",
+  "start_url": "/i-dag",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf6f1",
+  "theme_color": "#4a3122",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
