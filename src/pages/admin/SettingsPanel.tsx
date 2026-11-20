@@ -1,13 +1,27 @@
 import { useState } from 'react'
 import { Button, ErrorMessage, Field } from '../../components/ui'
-import { fetchSettings, setGroupCode, setShowFutureDays } from '../../data/queries'
+import { fetchResetStatus, fetchSettings, setGroupCode, setShowFutureDays } from '../../data/queries'
 import { useAsync } from '../../data/useAsync'
 import { supabase } from '../../lib/supabase'
 import { useCalendar } from '../../data/CalendarContext'
+import { vurderingerText } from '../../lib/reset'
+import { ResetPanel } from './ResetPanel'
 
-/** Indstillinger: åbn alle låger (test/efterslæb) og skift gruppekode. */
+function CheckItem({ ok, children }: { ok: boolean | null; children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2 text-base text-kaffe-900">
+      <span aria-hidden="true" className={`mt-0.5 ${ok === null ? 'text-kaffe-400' : ok ? 'text-green-700' : 'text-amber-700'}`}>
+        {ok === null ? '…' : ok ? '✓' : '✗'}
+      </span>
+      <span>{children}</span>
+    </li>
+  )
+}
+
+/** Indstillinger: tjekliste før start, åbn alle låger (test/efterslæb), skift gruppekode og nulstil vurderinger. */
 export function SettingsPanel() {
   const settings = useAsync(() => fetchSettings(supabase), [])
+  const reset = useAsync(() => fetchResetStatus(supabase), [])
   const cal = useCalendar()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -54,8 +68,25 @@ export function SettingsPanel() {
   if (!settings.data) return <div className="h-40 animate-pulse rounded-2xl bg-white/70" />
   const on = settings.data.show_future_days
 
+  const total = reset.data?.total
+  const clean = total === undefined ? null : total === 0
+  const ready = settings.data && clean !== null ? !on && clean : null
+
   return (
     <div className="space-y-4">
+      <section className="rounded-2xl bg-white p-4 shadow-sm" aria-labelledby="ready-title">
+        <h3 id="ready-title" className="text-lg font-bold text-kaffe-900">
+          Klar til 1. december?
+        </h3>
+        <ul className="mt-2 space-y-1">
+          <CheckItem ok={clean}>
+            {clean === null ? 'Tjekker vurderinger…' : clean ? 'Ingen testvurderinger i databasen' : `${vurderingerText(total!)} i databasen. Nulstil dem nedenfor.`}
+          </CheckItem>
+          <CheckItem ok={!on}>{on ? '“Åbn alle låger” er slået til. Slå den fra nedenfor.' : '“Åbn alle låger” er slået fra (lågerne følger datoen)'}</CheckItem>
+        </ul>
+        {ready === true && <p className="mt-2 text-base font-medium text-green-800">Alt er klar. Kalenderen kan starte ✓</p>}
+      </section>
+
       <section className="rounded-2xl bg-white p-4 shadow-sm">
         <h3 className="text-lg font-bold text-kaffe-900">Åbn alle låger</h3>
         <p className="mt-1 text-base text-kaffe-700">
@@ -89,6 +120,8 @@ export function SettingsPanel() {
           {message}
         </p>
       )}
+
+      <ResetPanel status={reset} />
     </div>
   )
 }

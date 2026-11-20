@@ -76,6 +76,7 @@ Migrationerne ligger i `supabase/migrations/` og skal køres i filnavnsrækkefø
 | `20261112100000_schema.sql` | tabeller, typer, triggers |
 | `20261112100100_functions.sql` | datoregler (Europe/Copenhagen), `create_profile`, hjælpefunktioner |
 | `20261112100200_rls.sql` | Row Level Security og rettigheder |
+| `20261120100000_reset_ratings.sql` | admin-funktioner til at nulstille alle vurderinger (med spærre) |
 
 **Med Supabase CLI** (anbefalet):
 
@@ -139,7 +140,16 @@ Derefter kan en admin skifte gruppekoden i appen (**Admin → Indstillinger**).
 
 **Admin-siden** (kun for admin): *Deltagelse* (hvem har stemt på hvilke dage og hvem mangler i dag, aldrig
 karakterer), *Ret kaffe* (ret felterne på en kaffe, fx ristning, og felter du retter overskrives ikke af scraperen) og
-*Indstillinger* (åbn alle låger, skift gruppekode).
+*Indstillinger* (tjekliste før start, åbn alle låger, skift gruppekode og nulstil alle vurderinger).
+
+**Nulstil alle vurderinger** (Admin → Indstillinger) sletter alle karakterer, kommentarer og bryggeparametre fra hele
+gruppen, så kalenderen kan starte med rent bord efter test. Kaffer, medlemmer og indstillinger røres ikke. Det kan
+**ikke fortrydes**, så der skal skrives `NULSTIL` for at bekræfte. Funktionerne (`reset_ratings`, `ratings_reset_status`) ligger i
+databasen og kan kun bruges af admin. De er **spærret, så rigtige stemmer ikke kan slettes ved en fejl**: er der
+oprettet en vurdering efter kalenderens start (1. december kl. 00:00 dansk tid), nægter databasen at nulstille. Spærren ser på
+hvornår der blev stemt og ikke på uret, så testvurderinger fra november kan stadig nulstilles på selve 1. december, så længe
+ingen rigtige stemmer er kommet til. Skal rigtige stemmer alligevel slettes, gøres det direkte i Supabase (SQL Editor).
+Panelet viser også en tjekliste ("Klar til 1. december?"): ingen testvurderinger, og "Åbn alle låger" er slået fra.
 
 ## 5. Miljøvariabler
 
@@ -194,7 +204,7 @@ npm run preview    # server den færdige build lokalt
 ```
 
 Appen på `localhost` bruger den **rigtige** Supabase-database fra `.env`. Der er ingen separat testdatabase, så
-vurderinger du giver under test er rigtige data. Slet dem før 1. december (SQL Editor): `delete from public.ratings;`.
+vurderinger du giver under test er rigtige data. Nulstil dem før 1. december i **Admin → Indstillinger → Nulstil alle vurderinger** (se afsnit 4).
 
 ## 8. Deploy til Netlify
 
@@ -259,19 +269,20 @@ Alle tal vises med antal karakterer (n).
 ## 12. Tests
 
 ```bash
-npm test               # alle 122 tests (kører uden netværk)
+npm test               # alle 137 tests (kører uden netværk)
 npm run test:rls       # kun RLS-testene
 npm run typecheck
 ```
 
-- **`supabase/tests/`** (44 tests) kører de rigtige migrationer i en lokal Postgres (PGlite, ingen Docker nødvendig) med
+- **`supabase/tests/`** (56 tests) kører de rigtige migrationer i en lokal Postgres (PGlite, ingen Docker nødvendig) med
   testbrugere (admin, almindelig bruger, bruger uden profil, anon) og "flytter uret" for at teste datoreglerne. Hver
   regel fra afsnit 4 har egne tests: skjulte karakterer, kun egne ratings, ingen spoilere, 1. og 25. december, hele
-  point 1–5, gruppekode, spærring og at man ikke kan gøre sig selv til admin. PGlite er Postgres, men ikke Supabase.
+  point 1–5, gruppekode, spærring og at man ikke kan gøre sig selv til admin. Nulstilling af vurderinger har 12 tests
+  (kun admin, spærren ved kalenderens start, at intet andet slettes). PGlite er Postgres, men ikke Supabase.
 - **`src/stats/`** (24 tests) regner statistikken på et lille datasæt med tre bedømmere og fire kaffer, hvor alle
   forventede tal er regnet i hånden.
 - **`scripts/lib/parse.test.ts`** (28 tests) tester parseren på rigtige uddrag af BREWs sider.
-- **`src/lib/`** (26 tests): datoer og tidszone, validering, danske fejlbeskeder, redigering af kaffe.
+- **`src/lib/`** (29 tests): datoer og tidszone, validering, danske fejlbeskeder, redigering af kaffe, bekræftelse af nulstilling.
 
 **Tests mod det rigtige Supabase-projekt** (kræver `.env`). De opretter midlertidige testbrugere
 (`smoke-…@example.com`), henter engangskoder via admin-API'et (der sendes ingen mail) og rydder op bagefter:
@@ -279,6 +290,7 @@ npm run typecheck
 ```bash
 npm run smoke:auth      # login, ingen adgang uden profil, forkert gruppekode, sessionsfornyelse, log ud
 npm run smoke:ratings   # stem, skjulte karakterer, ret, kalenderoverblik, lukkede låger
+npm run smoke:reset     # nulstil-funktionerne: rettigheder og spærren (sletter aldrig noget, tager en sikkerhedskopi først)
 ```
 
 **Slut-test på mobil:** `npm run e2e -- seed` opretter fire testbrugere med et kendt datasæt og åbner alle låger, så

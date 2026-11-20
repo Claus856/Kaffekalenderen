@@ -21,12 +21,13 @@ export function Logo({ subtitle }: { subtitle?: string }) {
   )
 }
 
-type Variant = 'primary' | 'secondary' | 'link'
+type Variant = 'primary' | 'secondary' | 'link' | 'danger'
 
 const variants: Record<Variant, string> = {
   primary: 'h-14 w-full rounded-2xl bg-kaffe-700 text-lg font-semibold text-white shadow-sm hover:bg-kaffe-800 active:bg-kaffe-900',
   secondary: 'h-14 w-full rounded-2xl border border-kaffe-300 bg-white text-lg font-semibold text-kaffe-800 hover:bg-kaffe-100',
   link: 'min-h-12 w-full text-base text-kaffe-700 underline underline-offset-4 hover:text-kaffe-900',
+  danger: 'h-14 w-full rounded-2xl bg-red-700 text-lg font-semibold text-white shadow-sm hover:bg-red-800 active:bg-red-900',
 }
 
 export function Button({

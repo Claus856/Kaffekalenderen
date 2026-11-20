@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database, Tables } from '../lib/database.types'
+import { describeResetError } from '../lib/reset'
 import type { RatingValue } from '../lib/ratings'
 
 /**
@@ -138,6 +139,29 @@ export async function fetchSettings(db: Client): Promise<{ show_future_days: boo
 export async function setShowFutureDays(db: Client, value: boolean): Promise<void> {
   const { error } = await db.from('settings').update({ show_future_days: value }).eq('id', true)
   if (error) fail('Kunne ikke ændre indstillingen', error)
+}
+
+export interface ResetStatus {
+  /** antal vurderinger i databasen i alt */
+  total: number
+  /** spærret fordi der er stemt efter kalenderens start */
+  locked: boolean
+}
+
+/** Antal vurderinger og om nulstilling er spærret. Kun admin. */
+export async function fetchResetStatus(db: Client): Promise<ResetStatus> {
+  const { data, error } = await db.rpc('ratings_reset_status')
+  if (error) throw new Error(describeResetError(error))
+  const row = data?.[0]
+  if (!row) throw new Error('Kunne ikke hente status for nulstilling.')
+  return { total: Number(row.total), locked: row.locked }
+}
+
+/** Sletter ALLE vurderinger og returnerer hvor mange. Kun admin, og spærret når rigtige stemmer findes. */
+export async function resetRatings(db: Client): Promise<number> {
+  const { data, error } = await db.rpc('reset_ratings')
+  if (error) throw new Error(describeResetError(error))
+  return Number(data ?? 0)
 }
 
 export async function setGroupCode(db: Client, code: string): Promise<void> {

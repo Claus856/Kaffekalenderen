@@ -1,7 +1,7 @@
 {
   "name": "kaffekalenderen",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Kaffekalenderen – vennegruppens karakterbog for BREW Companys kaffejulekalender",
   "engines": {
@@ -21,6 +21,7 @@
     "postbuild": "tsx scripts/check-secrets.ts dist",
     "smoke:auth": "tsx scripts/smoke-auth.ts",
     "smoke:ratings": "tsx scripts/smoke-ratings.ts",
+    "smoke:reset": "tsx scripts/smoke-reset.ts",
     "e2e": "tsx scripts/e2e-fixture.ts"
   },
   "dependencies": {

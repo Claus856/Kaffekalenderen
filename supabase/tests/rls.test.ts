@@ -486,3 +486,113 @@ describe('Rettigheder, admin og profiler', () => {
     await asOwner(db, `insert into public.profiles (id, display_name) values ($1, 'Bob')`, [users.bob])
   })
 })
+
+// ───────────────────────────────────────────────────────────────────────────
+describe('Nulstil vurderinger (kun admin)', () => {
+  /** Opret en vurdering som database-ejer med et bestemt oprettelsestidspunkt (så spærren kan testes). */
+  const seed = (who: Who, day: number, score: number, createdAt = '2026-11-20T12:00:00Z') =>
+    asOwner(db, `insert into public.ratings (user_id, coffee_day, score, created_at) values ($1, $2, $3, $4)`, [users[who], day, score, createdAt])
+  const count = async () => Number((await asOwner<{ n: number }>(db, `select count(*)::int as n from public.ratings`))[0].n)
+
+  it('almindelige brugere kan hverken se status eller nulstille, og intet slettes', async () => {
+    await seed('alice', 1, 5)
+    await seed('bob', 1, 4)
+
+    await expect(as.bob().rows(`select * from public.ratings_reset_status()`)).rejects.toThrow(/Kun admin/)
+    await expect(as.bob().rows(`select public.reset_ratings()`)).rejects.toThrow(/Kun admin/)
+    expect(await count()).toBe(2)
+  })
+
+  it('en bruger uden profil kan heller ikke, og anon har ingen adgang til funktionerne', async () => {
+    await seed('alice', 1, 5)
+    await expect(as.carol().rows(`select public.reset_ratings()`)).rejects.toThrow(/Kun admin/)
+    await expect(as.anon().rows(`select public.reset_ratings()`)).rejects.toThrow(/permission denied/i)
+    await expect(as.anon().rows(`select * from public.ratings_reset_status()`)).rejects.toThrow(/permission denied/i)
+    expect(await count()).toBe(1)
+  })
+
+  it('den interne hjælpefunktion calendar_start() kan ikke kaldes udefra', async () => {
+    await expect(as.alice().rows(`select public.calendar_start()`)).rejects.toThrow(/permission denied/i)
+    await expect(as.anon().rows(`select public.calendar_start()`)).rejects.toThrow(/permission denied/i)
+  })
+
+  it('calendar_start er 1. december kl. 00:00 dansk tid (30. nov kl. 23:00 UTC), og følger calendar_year', async () => {
+    const start = async () => (await asOwner<{ t: Date }>(db, `select public.calendar_start() as t`))[0].t.toISOString()
+    expect(await start()).toBe('2026-11-30T23:00:00.000Z')
+    await asOwner(db, `update public.settings set calendar_year = 2027 where id`)
+    expect(await start()).toBe('2027-11-30T23:00:00.000Z')
+  })
+
+  it('admin ser antal og at nulstilling er mulig, og karaktererne forbliver skjulte for admin', async () => {
+    await seed('bob', 1, 4)
+    await seed('bob', 2, 3)
+    const [s] = await as.alice().rows<{ total: number; locked: boolean }>(`select * from public.ratings_reset_status()`)
+    expect([Number(s.total), s.locked]).toEqual([2, false])
+    expect(await as.alice().rows(`select * from public.ratings`)).toHaveLength(0) // admin har ingen genvej til andres karakterer
+  })
+
+  it('admin sletter ALLE vurderinger, får antallet tilbage, og intet andet røres', async () => {
+    await seed('alice', 1, 5)
+    await seed('alice', 2, 2)
+    await seed('bob', 1, 4)
+    await seed('bob', 3, 1)
+
+    const [r] = await as.alice().rows<{ n: number }>(`select public.reset_ratings() as n`)
+    expect(Number(r.n)).toBe(4)
+    expect(await count()).toBe(0)
+
+    // kaffer, smagsnoter, medlemmer og indstillinger er urørte
+    expect(await asOwner(db, `select 1 from public.coffees`)).toHaveLength(25)
+    expect(await asOwner(db, `select 1 from public.coffee_notes`)).toHaveLength(3)
+    expect((await asOwner<{ display_name: string }>(db, `select display_name from public.profiles order by 1`)).map((p) => p.display_name)).toEqual(['Alice', 'Bob'])
+    expect((await asOwner<{ h: string | null }>(db, `select group_code_hash as h from public.settings`))[0].h).not.toBeNull()
+  })
+
+  it('nulstilling uden vurderinger giver 0 og fejler ikke', async () => {
+    const [r] = await as.alice().rows<{ n: number }>(`select public.reset_ratings() as n`)
+    expect(Number(r.n)).toBe(0)
+  })
+
+  it('efter en nulstilling virker alt som før: man kan stemme igen, og karaktererne er skjulte igen', async () => {
+    await seed('alice', 1, 5)
+    await as.alice().rows(`select public.reset_ratings()`)
+
+    await rate('alice', 1, 3)
+    expect(await as.bob().rows(`select * from public.ratings`)).toHaveLength(0) // skjult, til Bob selv har stemt
+    await rate('bob', 1, 4)
+    expect(await as.bob().rows(`select * from public.ratings`)).toHaveLength(2)
+  })
+
+  it('SPÆRRE: er der stemt efter kalenderens start, nægter funktionen, og intet slettes', async () => {
+    await seed('alice', 1, 5, '2026-11-20T12:00:00Z') // testvurdering fra november
+    await seed('bob', 1, 4, '2026-12-02T09:30:00Z') // rigtig stemme efter 1. december
+
+    const [s] = await as.alice().rows<{ total: number; locked: boolean }>(`select * from public.ratings_reset_status()`)
+    expect([Number(s.total), s.locked]).toEqual([2, true])
+
+    await expect(as.alice().rows(`select public.reset_ratings()`)).rejects.toThrow(/efter kalenderens start/)
+    expect(await count()).toBe(2)
+  })
+
+  it('spærren ser på hvornår der blev stemt, ikke på uret: testvurderinger fra november kan nulstilles i december', async () => {
+    await seed('alice', 1, 5, '2026-11-15T12:00:00Z')
+    await seed('bob', 2, 2, '2026-11-30T22:59:00Z') // 23:59 dansk tid, 1 minut før start
+    await setToday(db, '2026-12-03')
+
+    const [r] = await as.alice().rows<{ n: number }>(`select public.reset_ratings() as n`)
+    expect(Number(r.n)).toBe(2)
+  })
+
+  it('spærren træder i kraft præcis ved midnat dansk tid', async () => {
+    await seed('bob', 1, 4, '2026-11-30T23:00:00Z') // 00:00 dansk tid 1. dec = første sekund af kalenderen
+    await expect(as.alice().rows(`select public.reset_ratings()`)).rejects.toThrow(/efter kalenderens start/)
+    expect(await count()).toBe(1)
+  })
+
+  it('en admin kan ikke slette via DELETE direkte: RLS tillader kun egne vurderinger', async () => {
+    await seed('bob', 1, 4)
+    await rate('alice', 1, 5) // så Alice kan se Bobs
+    expect(await as.alice().rows(`delete from public.ratings where user_id = $1 returning id`, [users.bob])).toHaveLength(0)
+    expect(await count()).toBe(2)
+  })
+})

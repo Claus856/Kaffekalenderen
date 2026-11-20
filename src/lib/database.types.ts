@@ -213,6 +213,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calendar_start: { Args: never; Returns: string }
       cph_date: { Args: { p_ts: string }; Returns: string }
       create_profile: {
         Args: { p_display_name: string; p_group_code: string }
@@ -230,6 +231,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      ratings_reset_status: {
+        Args: never
+        Returns: {
+          locked: boolean
+          total: number
+        }[]
+      }
+      reset_ratings: { Args: never; Returns: number }
       set_group_code: { Args: { p_code: string }; Returns: undefined }
       today_cph: { Args: never; Returns: string }
     }
