@@ -30,7 +30,11 @@ export function PeopleTab({
   const part = stats.participation.find((p) => p.id === rater.id)
   const twins = twinsOf(stats, rater.id)
   const votes = ratings.filter((r) => r.user_id === rater.id).sort((a, b) => a.coffee_day - b.coffee_day)
-  const coffeeName = (day: number) => coffees.find((c) => c.day === day)?.country ?? `Låge ${day}`
+  // Kaffer uden land (fx "Ukendt kaffe") vises med deres navn
+  const coffeeName = (day: number) => {
+    const c = coffees.find((x) => x.day === day)
+    return c?.country ?? c?.name ?? 'Ukendt kaffe'
+  }
 
   return (
     <div className="space-y-4">

@@ -299,13 +299,15 @@ appen kan prøves i en browser på 375 px. `npm run e2e -- otp <Navn>` giver en 
 
 ## 13. Kendte forhold
 
-- **Ristningsgrad er tom** for alle kaffer, fordi BREWs side ikke angiver den pr. kaffe. Statistik pr. ristning er tom, til
-  den udfyldes i admin.
-- **Blends** (dag 10, 17 og 24) har ikke ét land, og dermed ingen verdensdel. De samles under "Blend / ukendt" i statistikken.
-  Verdensdel kan sættes i admin.
-- **Kildedata fra BREW kan være forkerte.** Zimbabwes højde står som 3000–3300 m, hvilket nok er fod. Ret det i admin.
-  Flere dage har højder, varieteter eller noter der afviger mellem BREWs side og deres produktside. Siden vinder, og
-  afvigelserne står i scraperens opsummering.
+- **Ristningsgrad:** BREWs side angiver den ikke pr. kaffe, så scraperen lader den stå tom. Alle 25 kaffer er sat til
+  `medium` direkte i databasen og markeret som rettet manuelt, så en ny kørsel af scraperen ikke tømmer feltet. Sættes
+  en ny, tom database op, skal ristningen udfyldes igen. Statistik pr. ristning har derfor kun én gruppe.
+- **Ukendte kaffer:** dag 13, 15, 21, 23 og 24 er sat til "Ukendt kaffe" (kun ristning er udfyldt), fordi vi ikke har de
+  rigtige oplysninger. Alle felter er markeret som rettet manuelt. Udfyld dem i **Admin → Ret kaffe**, når de kendes.
+- **Blends** (dag 10 og 17) har ikke ét land, og dermed ingen verdensdel. De samles under "Blend / ukendt" i statistikken,
+  sammen med de ukendte kaffer. Verdensdel kan sættes i admin.
+- **Kildedata fra BREW kan være forkerte.** Flere dage har højder, varieteter eller noter der afviger mellem BREWs side og
+  deres produktside. Siden vinder, og afvigelserne står i scraperens opsummering.
 - Service workeren er afprøvet i Node, men ikke i en rigtig browser (det indbyggede browserpanel kan ikke
   registrere service workers). Tjek efter deploy i Chrome: DevTools → Application → Service Workers.
 - Der er ikke sat en `Content-Security-Policy`-header. Siden ligger nu på Netlify og kan afprøves, så den kan tilføjes
